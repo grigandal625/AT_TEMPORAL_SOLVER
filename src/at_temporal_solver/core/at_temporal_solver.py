@@ -58,7 +58,7 @@ class TemporalSolver:
         if isinstance(v, KBAllenOperation):
             allen_evaluator = AllenEvaluator(self)
             res = allen_evaluator.eval(v)
-            self.wm.set_value(v.xml_owner_path, res)
+            self.wm.set_value('signifier.' + v.xml_owner_path, res)
         elif isinstance(v, KBOperation):
             self.search_and_signify(v.left)
             if v.is_binary:

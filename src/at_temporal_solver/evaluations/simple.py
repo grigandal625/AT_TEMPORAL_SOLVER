@@ -48,7 +48,7 @@ class SimpleEvaluator:
                 if right_v.content is None:
                     return KBValue(None)
                 return EVALUATORS[v.op](left_v, right_v)
-            return EVALUATORS[v.tag](left_v)
+            return EVALUATORS[v.op](left_v)
 
 
 def unify_number(n):
