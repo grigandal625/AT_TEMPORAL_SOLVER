@@ -51,18 +51,18 @@ class ATTemporalSolver(ATComponent):
         self.temporal_solvers = {}
 
     @authorized_method
-    def create_temporal_solver(self, kb_dict: dict, auth_token: str = None) -> bool:
+    def create_temporal_solver(self, kb: dict, auth_token: str = None) -> bool:
         auth_token = auth_token or 'default'
         
-        kb = KnowledgeBase.from_dict(kb_dict)
-        kb.validate()
+        knowledge_base = KnowledgeBase.from_dict(kb)
+        knowledge_base.validate()
 
-        solver = TemporalSolver(kb)
+        solver = TemporalSolver(knowledge_base)
         self.temporal_solvers[auth_token] = solver
         return True
     
     @authorized_method
-    def has_solver(self, auth_token: str = None) -> bool:
+    def has_temporal_solver(self, auth_token: str = None) -> bool:
         try:
             self.get_solver(auth_token)
             return True
@@ -100,5 +100,8 @@ class ATTemporalSolver(ATComponent):
         solver.process_tact()
         return {
             'wm': solver.wm.all_values_dict,
-            'timeline': solver.timeline.__dict__
+            'timeline': solver.timeline.__dict__,
+            'signified': {
+                key: value.content for key, value in solver.wm.locals.items()
+            },
         }
