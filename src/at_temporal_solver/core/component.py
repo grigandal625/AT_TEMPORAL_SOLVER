@@ -61,6 +61,14 @@ class ATTemporalSolver(ATComponent):
         self.temporal_solvers[auth_token] = solver
         return True
     
+    @authorized_method
+    def has_solver(self, auth_token: str = None) -> bool:
+        try:
+            self.get_solver(auth_token)
+            return True
+        except ValueError:
+            return False
+    
     def get_solver(self, auth_token: str = None) -> TemporalSolver:
         auth_token = auth_token or 'default'
         solver = self.temporal_solvers.get(auth_token)
