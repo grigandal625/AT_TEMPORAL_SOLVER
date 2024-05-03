@@ -92,7 +92,7 @@ class ATTemporalSolver(ATComponent):
         else:
             raise TypeError("Not valid type of knowledge base configuration")
         
-    def perform_configurate(self, config: ATComponentConfig, auth_token: str = None, *args, **kwargs) -> Coroutine[Any, Any, bool]:
+    async def perform_configurate(self, config: ATComponentConfig, auth_token: str = None, *args, **kwargs) -> Coroutine[Any, Any, bool]:
         kb = self.get_kb_from_config(config)
         return self.create_temporal_solver(kb, auth_token=auth_token)
     
