@@ -1,3 +1,6 @@
+from uuid import UUID
+from aio_pika import IncomingMessage
+from at_config.core.at_config_handler import ATComponentConfig
 from at_queue.core.session import ConnectionParameters
 from at_temporal_solver.core.at_temporal_solver import TemporalSolver
 from at_queue.core.at_component import ATComponent
@@ -5,8 +8,15 @@ from at_queue.utils.decorators import authorized_method
 from at_krl.core.knowledge_base import KnowledgeBase
 from at_krl.core.kb_value import KBValue
 from at_krl.core.non_factor import NonFactor
-from typing import Dict, TypedDict, Union, Optional, List
+from typing import Any, Coroutine, Dict, TypedDict, Union, Optional, List
 from at_temporal_solver.core.wm import WorkingMemory
+from xml.etree.ElementTree import Element
+
+from at_krl.grammar.at_krlLexer import at_krlLexer
+from at_krl.grammar.at_krlParser import at_krlParser
+from at_krl.utils.listener import ATKRLListener
+from at_krl.utils.error_listener import ATKRLErrorListener
+from antlr4 import CommonTokenStream, InputStream
 
 
 class WMItemDict(TypedDict):
@@ -50,18 +60,49 @@ class ATTemporalSolver(ATComponent):
         super().__init__(connection_parameters, *args, **kwargs)
         self.temporal_solvers = {}
 
-    @authorized_method
-    def create_temporal_solver(self, kb: dict, auth_token: str = None) -> bool:
+    def perform_configurate(self, config: ATComponentConfig, auth_token: str = None, *args, **kwargs) -> Coroutine[Any, Any, bool]:
+        kb_item = config.items.get('kb')
+        if kb_item is None:
+            raise ValueError('Knowledge base is required')
+        kb_data = kb_item.data
+        if isinstance(kb_data, Element):
+            kb = KnowledgeBase.from_xml(kb_data)
+        elif isinstance(kb_data, dict):
+            kb = KnowledgeBase.from_dict(kb_data)
+        elif isinstance(kb_data, str):
+            krl_text = kb_data
+
+            input_stream = InputStream(krl_text)
+            lexer = at_krlLexer(input_stream)
+            stream = CommonTokenStream(lexer)
+            parser = at_krlParser(stream)
+
+            listener = ATKRLListener()
+            parser.addParseListener(listener)
+            parser.removeErrorListeners()
+            parser.addErrorListener(ATKRLErrorListener())
+            tree = parser.knowledge_base()
+            if tree.exception:
+                raise tree.exception
+            kb = listener.KB
+        else:
+            raise TypeError("Not valid type of knowledge balse configuration")
+        
+        return self.create_temporal_solver(kb, auth_token=auth_token)
+    
+    def create_temporal_solver(self, kb: KnowledgeBase, auth_token: str = None) -> bool:
         auth_token = auth_token or 'default'
         
-        knowledge_base = KnowledgeBase.from_dict(kb)
+        knowledge_base = kb
         knowledge_base.validate()
 
         solver = TemporalSolver(knowledge_base)
         self.temporal_solvers[auth_token] = solver
         return True
     
-    @authorized_method
+    async def check_configured(self, *args, message: Dict, sender: str, message_id: str | UUID, reciever: str, msg: IncomingMessage, auth_token: str = None, **kwargs) -> bool:
+        return self.has_temporal_solver(auth_token=auth_token)
+
     def has_temporal_solver(self, auth_token: str = None) -> bool:
         try:
             self.get_solver(auth_token)

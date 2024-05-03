@@ -4,8 +4,8 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-at-queue = {git = "https://github.com/grigandal625/AT_QUEUE.git"}
 at-krl = {git = "https://github.com/grigandal625/AT_KRL.git"}
+at-queue = {git = "https://github.com/grigandal625/AT_QUEUE.git"}
 
 [dev-packages]
 autopep8 = "*"

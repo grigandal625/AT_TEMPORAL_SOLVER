@@ -6,24 +6,23 @@ lint:
 	mypy src --ignore-missing-imports
 	flake8 src --ignore=$(shell cat .flakeignore)
 
-dev:
+dev: requirements
 	pipenv run python setup.py develop
 
 test: dev
 	pytest
 
-clean:
+clean: requirements
 	@rm -rf .pytest_cache/ .mypy_cache/ junit/ build/ dist/
 	
 build: clean
 	pip install wheel
 	python setup.py bdist_wheel
 stable:
-	cp dist/at_blackboard-*.*-py3-none-any.whl dist/at_blackboard-stable-py3-none-any.whl
+	cp dist/at_queue-*.*-py3-none-any.whl dist/at_queue-stable-py3-none-any.whl
 latest:
-	cp dist/at_blackboard-*.*-py3-none-any.whl dist/at_blackboard-latest-py3-none-any.whl
+	cp dist/at_queue-*.*-py3-none-any.whl dist/at_queue-latest-py3-none-any.whl
 requirements:
-	pip freeze > requirements.txt
-# sed -i 1d requirements.txt
+	pipenv run pip freeze | sed '/^-e git/d' > requirements.txt
 rabbit:
 	docker run --rm -p 15672:15672 -p 5672:5672 rabbitmq:management
