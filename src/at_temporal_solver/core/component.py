@@ -60,15 +60,19 @@ class ATTemporalSolver(ATComponent):
         super().__init__(connection_parameters, *args, **kwargs)
         self.temporal_solvers = {}
 
-    def perform_configurate(self, config: ATComponentConfig, auth_token: str = None, *args, **kwargs) -> Coroutine[Any, Any, bool]:
+    def get_kb_from_config(self, config: ATComponentConfig) -> KnowledgeBase:
         kb_item = config.items.get('kb')
+        if kb_item is None:
+            kb_item = config.items.get('knowledge_base')
+        if kb_item is None:
+            kb_item = config.items.get('knowledge-base')
         if kb_item is None:
             raise ValueError('Knowledge base is required')
         kb_data = kb_item.data
         if isinstance(kb_data, Element):
-            kb = KnowledgeBase.from_xml(kb_data)
+            return KnowledgeBase.from_xml(kb_data)
         elif isinstance(kb_data, dict):
-            kb = KnowledgeBase.from_dict(kb_data)
+            return KnowledgeBase.from_dict(kb_data)
         elif isinstance(kb_data, str):
             krl_text = kb_data
 
@@ -84,10 +88,12 @@ class ATTemporalSolver(ATComponent):
             tree = parser.knowledge_base()
             if tree.exception:
                 raise tree.exception
-            kb = listener.KB
+            return listener.KB
         else:
-            raise TypeError("Not valid type of knowledge balse configuration")
+            raise TypeError("Not valid type of knowledge base configuration")
         
+    def perform_configurate(self, config: ATComponentConfig, auth_token: str = None, *args, **kwargs) -> Coroutine[Any, Any, bool]:
+        kb = self.get_kb_from_config(config)
         return self.create_temporal_solver(kb, auth_token=auth_token)
     
     def create_temporal_solver(self, kb: KnowledgeBase, auth_token: str = None) -> bool:
