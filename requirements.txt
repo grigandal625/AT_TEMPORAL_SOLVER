@@ -4,7 +4,6 @@ antlr4-python3-runtime==4.13.0
 at-config @ git+https://github.com/grigandal625/AT_CONFIG.git@1558cf1267570a2ba0c7d1ddab9130c610782e58
 at-krl @ git+https://github.com/grigandal625/AT_KRL.git@3924f0d26b097673ed84f62a44b98cf74733319c
 at-queue @ git+https://github.com/grigandal625/AT_QUEUE.git@e1127fc4c1535a1b1cfa85f867e2d47a611a5dcf
-at-temporal-solver==0.0.dev1
 attrs==23.2.0
 autopep8==2.1.0
 bandit==1.7.8
