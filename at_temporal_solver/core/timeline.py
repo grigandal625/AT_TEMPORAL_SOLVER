@@ -183,7 +183,7 @@ class Timeline:
     
     def close_interval_instance(self, tact: int, interval: KBInterval) -> Optional[IntervalInstance]:
         instance = self.get_last_interval_instance(interval)
-        if instance is None ^ instance.closed:
+        if (instance is None) ^ instance.closed:
             return None
         instance.close_tact = tact
         return instance
