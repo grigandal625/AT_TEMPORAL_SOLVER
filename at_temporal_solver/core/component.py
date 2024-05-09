@@ -124,10 +124,10 @@ class ATTemporalSolver(ATComponent):
         return solver
 
     @authorized_method
-    def update_wm(self, items: List[WMItemDict], clear_befor: bool = True, auth_token: str = None) -> bool:
+    def update_wm(self, items: List[WMItemDict], clear_before: bool = True, auth_token: str = None) -> bool:
         
         solver = self.get_solver(auth_token=auth_token)
-        if clear_befor:
+        if clear_before:
             solver.wm = WorkingMemory(solver.kb)
         for item in items:
             nf = NonFactor(
@@ -156,4 +156,5 @@ class ATTemporalSolver(ATComponent):
             'signified': {
                 key: value.content for key, value in solver.wm.locals.items()
             },
+            'signified_meta': solver.signified_meta
         }

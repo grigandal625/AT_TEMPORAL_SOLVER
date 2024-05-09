@@ -6,18 +6,21 @@ from at_krl.core.knowledge_base import KnowledgeBase
 from at_krl.core.kb_value import Evaluatable, KBValue
 from at_krl.core.kb_operation import KBOperation
 from at_krl.core.temporal.kb_allen_operation import KBAllenOperation
+from at_krl.core.kb_rule import KBRule
 
 
 class TemporalSolver:
     wm: WorkingMemory
     kb: KnowledgeBase
     timeline: Timeline
+    signified_meta: dict = None
 
     def __init__(self, kb: KnowledgeBase) -> None:
         self.wm = WorkingMemory(kb)
         self.kb = kb
         self.timeline = Timeline()
         self.current_tact = None
+        self.signified_meta = {}
 
     def process_tact(self, as_new=True):
         if as_new:
@@ -25,6 +28,7 @@ class TemporalSolver:
                 self.current_tact = 0
             else:
                 self.current_tact += 1
+        self.signified_meta = {}
         self.build_timeline_tact()
         self.signify_temporal_operations_in_rules()
 
@@ -52,14 +56,19 @@ class TemporalSolver:
             
     def signify_temporal_operations_in_rules(self):
         for rule in self.kb.rules:
-            self.search_and_signify(rule.condition)
+            self.search_and_signify(rule.condition, rule=rule)
     
-    def search_and_signify(self, v: Evaluatable):
+    def search_and_signify(self, v: Evaluatable, rule: KBRule):
         if isinstance(v, KBAllenOperation):
             allen_evaluator = AllenEvaluator(self)
             res = allen_evaluator.eval(v)
             self.wm.set_value('signifier.' + v.xml_owner_path, res)
+            self.signified_meta[v.xml_owner_path] = {
+                'rule': rule.id,
+                'allen_operation': v.krl,
+                'value': res.content
+            }
         elif isinstance(v, KBOperation):
-            self.search_and_signify(v.left)
+            self.search_and_signify(v.left, rule=rule)
             if v.is_binary:
-                self.search_and_signify(v.right)
+                self.search_and_signify(v.right, rule=rule)
