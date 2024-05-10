@@ -34,13 +34,13 @@ class AllenEvaluator:
         right_instance = self.get_instance(right)
 
         if left_instance is None or right_instance is None:
-            return KBValue(False)
+            return KBValue(None)
         
         left_section = self.get_section(left_instance)
         right_section = self.get_section(right_instance)
 
         if left_section is None and right_section is None:
-            return KBValue(False)
+            return KBValue(None)
         
         return ALLEN_EVALUATORS[operation.sign](left_section, right_section)
         
