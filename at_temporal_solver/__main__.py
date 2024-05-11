@@ -3,6 +3,7 @@ from at_queue.core.session import ConnectionParameters
 from at_temporal_solver.core.component import ATTemporalSolver
 import asyncio
 import logging
+import os
 
 parser = argparse.ArgumentParser(
     prog='at-temporal-solver',
@@ -21,6 +22,13 @@ async def main(**connection_kwargs):
     solver = ATTemporalSolver(connection_parameters=connection_parameters)
     await solver.initialize()
     await solver.register()
+
+    if not os.path.exists('/var/run/at_temporal_solver/'):
+        os.makedirs('/var/run/at_temporal_solver/')
+
+    with open('/var/run/at_temporal_solver/pidfile.pid', 'w') as f:
+        f.write(str(os.getpid()))
+
     await solver.start()
 
 
