@@ -3,6 +3,7 @@ from aio_pika import IncomingMessage
 from at_config.core.at_config_handler import ATComponentConfig
 from at_queue.core.session import ConnectionParameters
 from at_temporal_solver.core.at_temporal_solver import TemporalSolver
+from at_temporal_solver.core.timeline import Timeline
 from at_queue.core.at_component import ATComponent
 from at_queue.utils.decorators import authorized_method
 from at_krl.core.knowledge_base import KnowledgeBase
@@ -122,6 +123,13 @@ class ATTemporalSolver(ATComponent):
         if solver is None:
             raise ValueError("Temporal solver for token '%s' is not created" % auth_token)
         return solver
+    
+    @authorized_method
+    def reset(self, auth_token: str = None) -> bool:
+        solver = self.get_solver(auth_token=auth_token)
+        solver.wm = WorkingMemory(solver.kb)
+        solver.timeline = Timeline()
+        return True
 
     @authorized_method
     def update_wm(self, items: List[WMItemDict], clear_before: bool = True, auth_token: str = None) -> bool:
