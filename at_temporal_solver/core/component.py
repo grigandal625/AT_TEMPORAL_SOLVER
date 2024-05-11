@@ -129,6 +129,7 @@ class ATTemporalSolver(ATComponent):
         solver = self.get_solver(auth_token=auth_token)
         solver.wm = WorkingMemory(solver.kb)
         solver.timeline = Timeline()
+        solver.current_tact = 0
         return True
 
     @authorized_method
