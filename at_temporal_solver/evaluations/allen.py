@@ -1,16 +1,22 @@
-from at_krl.core.temporal.allen_operation import AllenOperation
-from at_krl.core.temporal.allen_evaluatable import AllenEvaluatable
-from at_krl.core.temporal.allen_reference import AllenReference
+from dataclasses import dataclass
+from typing import List
+from typing import TYPE_CHECKING
+from typing import Union
+
+from at_krl.core.kb_reference import KBReference
+from at_krl.core.kb_value import Evaluatable
+from at_krl.core.kb_value import KBValue
+from at_krl.core.simple.simple_value import SimpleValue
 from at_krl.core.temporal.allen_attribute_expression import AllenAttributeExpression
+from at_krl.core.temporal.allen_evaluatable import AllenEvaluatable
 from at_krl.core.temporal.allen_event import KBEvent
 from at_krl.core.temporal.allen_interval import KBInterval
-from at_krl.core.kb_value import KBValue, Evaluatable
-from at_krl.core.simple.simple_value import SimpleValue
-from at_krl.core.kb_reference import KBReference
-from typing import TYPE_CHECKING, Union, List
-from dataclasses import dataclass
-from at_temporal_solver.core.timeline import IntervalInstance, EventInstance
+from at_krl.core.temporal.allen_operation import AllenOperation
+from at_krl.core.temporal.allen_reference import AllenReference
 from at_solver.evaluations.basic import BasicEvaluator
+
+from at_temporal_solver.core.timeline import EventInstance
+from at_temporal_solver.core.timeline import IntervalInstance
 
 if TYPE_CHECKING:
     from at_temporal_solver.core.at_temporal_solver import TemporalSolver
@@ -18,7 +24,7 @@ if TYPE_CHECKING:
 
 @dataclass
 class ModifiedBasicEvaluator(BasicEvaluator):
-    temporal_solver: 'TemporalSolver'
+    temporal_solver: "TemporalSolver"
 
     def eval(self, v: Evaluatable | AllenEvaluatable, ref_stack: List[KBReference] = None) -> KBValue:
         if not isinstance(v, AllenEvaluatable):
@@ -35,9 +41,9 @@ class TimeSection:
 
 
 class AllenEvaluator:
-    temporal_solver: 'TemporalSolver'
+    temporal_solver: "TemporalSolver"
 
-    def __init__(self, temporal_solver: 'TemporalSolver'):
+    def __init__(self, temporal_solver: "TemporalSolver"):
         self.temporal_solver = temporal_solver
 
     def eval(self, operation: AllenEvaluatable, *args, **kwargs) -> SimpleValue:
@@ -51,7 +57,9 @@ class AllenEvaluator:
             elif operation.id == "КОЛ_НАЧ" and isinstance(instance, IntervalInstance):
                 return SimpleValue(content=len(self.get_all_instances(operation.ref)))
             elif operation.id == "КОЛ_ОКОНЧ" and isinstance(instance, IntervalInstance):
-                return SimpleValue(content=len([interval for interval in self.get_all_instances(operation.ref) if interval.closed]))
+                return SimpleValue(
+                    content=len([interval for interval in self.get_all_instances(operation.ref) if interval.closed])
+                )
             elif operation.id == "ТАКТ_НАЧ" and isinstance(instance, IntervalInstance):
                 return SimpleValue(content=instance.open_tact)
             elif operation.id == "ТАКТ_ОКОНЧ" and isinstance(instance, IntervalInstance):
@@ -60,7 +68,6 @@ class AllenEvaluator:
                 return SimpleValue(content=instance.occurance_tact)
 
         if isinstance(operation, AllenOperation):
-        
             left = operation.left
             right = operation.right
 
@@ -69,21 +76,21 @@ class AllenEvaluator:
 
             if left_instance is None or right_instance is None:
                 return SimpleValue(content=None)
-            
+
             left_section = self.get_section(left_instance)
             right_section = self.get_section(right_instance)
 
             if left_section is None and right_section is None:
                 return SimpleValue(content=None)
-            
+
             return ALLEN_EVALUATORS[operation.sign](left_section, right_section)
-        
+
     def get_section(self, orig: Union[EventInstance, IntervalInstance]) -> TimeSection:
         if isinstance(orig, IntervalInstance):
             return TimeSection(
-                open=orig.open_tact, 
-                close=orig.close_tact if orig.close_tact is not None else self.temporal_solver.current_tact, 
-                orig=orig
+                open=orig.open_tact,
+                close=orig.close_tact if orig.close_tact is not None else self.temporal_solver.current_tact,
+                orig=orig,
             )
         elif isinstance(orig, EventInstance):
             return TimeSection(open=orig.occurance_tact, close=orig.occurance_tact, orig=orig)
@@ -105,7 +112,7 @@ class AllenEvaluator:
             return self.temporal_solver.timeline.get_event_instance(ref, index)
         elif isinstance(ref.target, KBInterval):
             return self.temporal_solver.timeline.get_interval_instance(ref, index)
-        
+
 
 def eval_b(left: TimeSection, right: TimeSection, *args, **kwargs) -> KBValue:
     return KBValue(left.close < right.open)
@@ -168,15 +175,15 @@ def eval_e(left: TimeSection, right: TimeSection, *args, **kwargs) -> KBValue:
 
 
 ALLEN_EVALUATORS = {
-    'b': eval_b,
-    'bi': eval_bi,
-    'm': eval_m,
-    'mi': eval_mi,
-    'a': eval_a,
-    'ai': eval_ai,
-    "s": eval_s, 
+    "b": eval_b,
+    "bi": eval_bi,
+    "m": eval_m,
+    "mi": eval_mi,
+    "a": eval_a,
+    "ai": eval_ai,
+    "s": eval_s,
     "si": eval_si,
-    "f": eval_f, 
+    "f": eval_f,
     "fi": eval_fi,
     "d": eval_d,
     "di": eval_di,

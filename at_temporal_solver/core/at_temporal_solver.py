@@ -1,12 +1,14 @@
-from at_solver.core.wm import WorkingMemory
-from at_temporal_solver.core.timeline import Timeline, TactRecord
-from at_temporal_solver.evaluations.simple import SimpleEvaluator
-from at_temporal_solver.evaluations.allen import AllenEvaluator
+from at_krl.core.kb_rule import KBRule
 from at_krl.core.knowledge_base import KnowledgeBase
 from at_krl.core.simple.simple_evaluatable import SimpleEvaluatable
 from at_krl.core.simple.simple_operation import SimpleOperation
 from at_krl.core.temporal.allen_evaluatable import AllenEvaluatable
-from at_krl.core.kb_rule import KBRule
+from at_solver.core.wm import WorkingMemory
+
+from at_temporal_solver.core.timeline import TactRecord
+from at_temporal_solver.core.timeline import Timeline
+from at_temporal_solver.evaluations.allen import AllenEvaluator
+from at_temporal_solver.evaluations.simple import SimpleEvaluator
 
 
 class TemporalSolver:
@@ -48,26 +50,22 @@ class TemporalSolver:
             occurance_value = evaluator.eval(event.occurance_condition)
             if occurance_value.content:
                 self.timeline.create_event_instance(self.current_tact, event)
-        
+
         result = self.timeline._tacts.get(self.current_tact)
         if result is None:
             return self.timeline.get_or_create_tact_record(self.current_tact)
         return result
-            
+
     def signify_temporal_operations_in_rules(self):
         for rule in self.kb.rules:
             self.search_and_signify(rule.condition, rule=rule)
-    
+
     def search_and_signify(self, v: SimpleEvaluatable, rule: KBRule):
         if isinstance(v, AllenEvaluatable):
             allen_evaluator = AllenEvaluator(self)
             res = allen_evaluator.eval(v)
-            self.wm.set_value('signifier.' + v.xml_owner_path, res)
-            self.signified_meta[v.xml_owner_path] = {
-                'rule': rule.id,
-                'allen_operation': v.krl,
-                'value': res.content
-            }
+            self.wm.set_value("signifier." + v.xml_owner_path, res)
+            self.signified_meta[v.xml_owner_path] = {"rule": rule.id, "allen_operation": v.krl, "value": res.content}
         elif isinstance(v, SimpleOperation):
             self.search_and_signify(v.left, rule=rule)
             if v.is_binary:

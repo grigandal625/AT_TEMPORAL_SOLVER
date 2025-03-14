@@ -1,20 +1,24 @@
-from at_krl.core.simple.simple_evaluatable import SimpleEvaluatable
-from at_krl.core.simple.simple_value import SimpleValue
-from at_krl.core.simple.simple_reference import SimpleReference
-from at_krl.core.simple.simple_operation import SimpleOperation
+from typing import List
+from typing import TYPE_CHECKING
+from typing import Union
+
 from at_krl.core.kb_value import KBValue
-from typing import TYPE_CHECKING, List, Union
+from at_krl.core.simple.simple_evaluatable import SimpleEvaluatable
+from at_krl.core.simple.simple_operation import SimpleOperation
+from at_krl.core.simple.simple_reference import SimpleReference
+from at_krl.core.simple.simple_value import SimpleValue
 
 if TYPE_CHECKING:
     from at_solver.core.wm import WorkingMemory
 
-class SimpleEvaluator:
-    wm: 'WorkingMemory' = None
 
-    def __init__(self, wm: 'WorkingMemory'):
+class SimpleEvaluator:
+    wm: "WorkingMemory" = None
+
+    def __init__(self, wm: "WorkingMemory"):
         self.wm = wm
 
-    def eval(self, v: SimpleEvaluatable, ref_stack: List[SimpleReference]=None) -> Union[KBValue, SimpleValue]:
+    def eval(self, v: SimpleEvaluatable, ref_stack: List[SimpleReference] = None) -> Union[KBValue, SimpleValue]:
         ref_stack = ref_stack or []
         if v is None:
             return SimpleValue(content=None)
@@ -25,18 +29,18 @@ class SimpleEvaluator:
                 instance = self.wm.get_instance_by_ref(v)
                 if [r.to_simple().krl for r in ref_stack].count(v.to_simple().krl) > 1:
                     raise ValueError(
-                        f'''Reference {v.to_simple().krl} has recursive link in wm to evaluate.
-                        
+                        f"""Reference {v.to_simple().krl} has recursive link in wm to evaluate.
+
                         Reference value is getting form:
                         {instance.krl}
-                        '''
-                    ) 
+                        """
+                    )
                 ref_stack.append(v)
                 return self.eval(instance.value, ref_stack=ref_stack)
             else:
                 local = self.wm.locals.get(v.to_simple().krl)
                 return self.eval(local)
-            
+
         elif isinstance(v, SimpleOperation):
             left_v = self.eval(v.left)
             if left_v.content is None:

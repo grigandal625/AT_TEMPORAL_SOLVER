@@ -1,23 +1,31 @@
+from typing import Any
+from typing import Coroutine
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import TypedDict
+from typing import Union
 from uuid import UUID
-from aio_pika import IncomingMessage
-from at_config.core.at_config_handler import ATComponentConfig
-from at_queue.core.session import ConnectionParameters
-from at_temporal_solver.core.at_temporal_solver import TemporalSolver
-from at_temporal_solver.core.timeline import Timeline
-from at_queue.core.at_component import ATComponent
-from at_queue.utils.decorators import authorized_method
-from at_krl.core.knowledge_base import KnowledgeBase
-from at_krl.core.kb_value import KBValue
-from at_krl.core.non_factor import NonFactor
-from typing import Any, Coroutine, Dict, TypedDict, Union, Optional, List
-from at_temporal_solver.core.wm import WorkingMemory
 from xml.etree.ElementTree import Element
 
+from aio_pika import IncomingMessage
+from antlr4 import CommonTokenStream
+from antlr4 import InputStream
+from at_config.core.at_config_handler import ATComponentConfig
+from at_krl.core.kb_value import KBValue
+from at_krl.core.knowledge_base import KnowledgeBase
+from at_krl.core.non_factor import NonFactor
 from at_krl.grammar.at_krlLexer import at_krlLexer
 from at_krl.grammar.at_krlParser import at_krlParser
-from at_krl.utils.listener import ATKRLListener
 from at_krl.utils.error_listener import ATKRLErrorListener
-from antlr4 import CommonTokenStream, InputStream
+from at_krl.utils.listener import ATKRLListener
+from at_queue.core.at_component import ATComponent
+from at_queue.core.session import ConnectionParameters
+from at_queue.utils.decorators import authorized_method
+
+from at_temporal_solver.core.at_temporal_solver import TemporalSolver
+from at_temporal_solver.core.timeline import Timeline
+from at_temporal_solver.core.wm import WorkingMemory
 
 
 class WMItemDict(TypedDict):
@@ -62,13 +70,13 @@ class ATTemporalSolver(ATComponent):
         self.temporal_solvers = {}
 
     def get_kb_from_config(self, config: ATComponentConfig) -> KnowledgeBase:
-        kb_item = config.items.get('kb')
+        kb_item = config.items.get("kb")
         if kb_item is None:
-            kb_item = config.items.get('knowledge_base')
+            kb_item = config.items.get("knowledge_base")
         if kb_item is None:
-            kb_item = config.items.get('knowledge-base')
+            kb_item = config.items.get("knowledge-base")
         if kb_item is None:
-            raise ValueError('Knowledge base is required')
+            raise ValueError("Knowledge base is required")
         kb_data = kb_item.data
         if isinstance(kb_data, Element):
             return KnowledgeBase.from_xml(kb_data)
@@ -92,22 +100,34 @@ class ATTemporalSolver(ATComponent):
             return listener.KB
         else:
             raise TypeError("Not valid type of knowledge base configuration")
-        
-    async def perform_configurate(self, config: ATComponentConfig, auth_token: str = None, *args, **kwargs) -> Coroutine[Any, Any, bool]:
+
+    async def perform_configurate(
+        self, config: ATComponentConfig, auth_token: str = None, *args, **kwargs
+    ) -> Coroutine[Any, Any, bool]:
         kb = self.get_kb_from_config(config)
         return self.create_temporal_solver(kb, auth_token=auth_token)
-    
+
     def create_temporal_solver(self, kb: KnowledgeBase, auth_token: str = None) -> bool:
-        auth_token = auth_token or 'default'
-        
+        auth_token = auth_token or "default"
+
         knowledge_base = kb
         knowledge_base.validate()
 
         solver = TemporalSolver(knowledge_base)
         self.temporal_solvers[auth_token] = solver
         return True
-    
-    async def check_configured(self, *args, message: Dict, sender: str, message_id: str | UUID, reciever: str, msg: IncomingMessage, auth_token: str = None, **kwargs) -> bool:
+
+    async def check_configured(
+        self,
+        *args,
+        message: Dict,
+        sender: str,
+        message_id: str | UUID,
+        reciever: str,
+        msg: IncomingMessage,
+        auth_token: str = None,
+        **kwargs
+    ) -> bool:
         return self.has_temporal_solver(auth_token=auth_token)
 
     def has_temporal_solver(self, auth_token: str = None) -> bool:
@@ -116,14 +136,14 @@ class ATTemporalSolver(ATComponent):
             return True
         except ValueError:
             return False
-    
+
     def get_solver(self, auth_token: str = None) -> TemporalSolver:
-        auth_token = auth_token or 'default'
+        auth_token = auth_token or "default"
         solver = self.temporal_solvers.get(auth_token)
         if solver is None:
             raise ValueError("Temporal solver for token '%s' is not created" % auth_token)
         return solver
-    
+
     @authorized_method
     def reset(self, auth_token: str = None) -> bool:
         solver = self.get_solver(auth_token=auth_token)
@@ -134,36 +154,30 @@ class ATTemporalSolver(ATComponent):
 
     @authorized_method
     def update_wm(self, items: List[WMItemDict], clear_before: bool = True, auth_token: str = None) -> bool:
-        
         solver = self.get_solver(auth_token=auth_token)
         if clear_before:
             solver.wm = WorkingMemory(solver.kb)
         for item in items:
             nf = NonFactor(
-                belief=item.get('belief'), 
-                probability=item.get('probability'), 
-                accuracy=item.get('accuracy')
+                belief=item.get("belief"), probability=item.get("probability"), accuracy=item.get("accuracy")
             )
-            v = KBValue(content=item['value'], non_factor=nf)
-            solver.wm.set_value(item['ref'], v)
-        
+            v = KBValue(content=item["value"], non_factor=nf)
+            solver.wm.set_value(item["ref"], v)
+
         return True
 
     @authorized_method
     async def update_wm_from_bb(self, clear_before: bool = True, auth_token: str = None) -> bool:
-        items = await self.exec_external_method('ATBlackBoard', 'get_all_items', {}, auth_token=auth_token)
+        items = await self.exec_external_method("ATBlackBoard", "get_all_items", {}, auth_token=auth_token)
         return self.update_wm(items=items, clear_before=clear_before, auth_token=auth_token)
-    
+
     @authorized_method
     def process_tact(self, auth_token: str) -> ProcessTactResultDict:
-        
         solver = self.get_solver(auth_token)
         solver.process_tact()
         return {
-            'wm': solver.wm.all_values_dict,
-            'timeline': solver.timeline.__dict__,
-            'signified': {
-                key: value.content for key, value in solver.wm.locals.items()
-            },
-            'signified_meta': solver.signified_meta
+            "wm": solver.wm.all_values_dict,
+            "timeline": solver.timeline.__dict__,
+            "signified": {key: value.content for key, value in solver.wm.locals.items()},
+            "signified_meta": solver.signified_meta,
         }
