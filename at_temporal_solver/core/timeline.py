@@ -1,5 +1,6 @@
-from at_krl.core.temporal.kb_event import KBEvent
-from at_krl.core.temporal.kb_interval import KBInterval
+from at_krl.core.temporal.allen_event import KBEvent
+from at_krl.core.temporal.allen_reference import AllenReference
+from at_krl.core.temporal.allen_interval import KBInterval
 from dataclasses import dataclass
 from typing import Optional, List, Union, Dict
 
@@ -175,14 +176,14 @@ class Timeline:
 
     def open_interval_instance(self, tact: int, interval: KBInterval) -> IntervalInstance:
         if self.interval_is_still_opened(interval):
-            return self.get_last_interval_instance(interval)
+            return self.get_interval_instance(interval)
         tact_record = self.get_or_create_tact_record(tact)
         result = tact_record.open_interval_instance(interval)
         self._tacts[tact] = tact_record
         return result
     
     def close_interval_instance(self, tact: int, interval: KBInterval) -> Optional[IntervalInstance]:
-        instance = self.get_last_interval_instance(interval)
+        instance = self.get_interval_instance(interval)
         if (instance is None) ^ instance.closed:
             return None
         instance.close_tact = tact
@@ -194,27 +195,41 @@ class Timeline:
         self._tacts[tact] = tact_record
         return result
     
-    def get_last_event_instance(self, event: Union[str, KBEvent, EventInstance]) -> Optional[EventInstance]:
+    def get_event_instance(self, event: Union[str, AllenReference, EventInstance], index=-1) -> Optional[EventInstance]:
+        all_instances = self.get_all_event_instances(event)
+        if all_instances and index in range(-len(all_instances), len(all_instances)):
+            return all_instances[index]
+    
+    def get_interval_instance(self, interval: Union[AllenReference, KBInterval, str], index=-1) -> Optional[IntervalInstance]:
+        all_instances = self.get_all_interval_instances(interval)
+        if all_instances and index in range(-len(all_instances), len(all_instances)):
+            return all_instances[index]
+
+    def get_all_event_instances(self, event: Union[str, AllenReference, EventInstance]):
         if isinstance(event, EventInstance):
             event = event.event
+        elif isinstance(event, AllenReference):
+            event = event.target
+        result = []
         tact_list: List[TactRecord] = self.sorted_tact_list
-        tact_list.reverse()
         for tact_record in tact_list:
             instance = tact_record.get_event_instance_by_event(event)
             if instance is not None:
-                return instance
-        return None
-    
-    def get_last_interval_instance(self, interval: Union[IntervalInstance, KBInterval, str]) -> Optional[IntervalInstance]:
+                result.append(instance)
+        return result
+
+    def get_all_interval_instances(self, interval: Union[AllenReference, KBInterval, str]):
         if isinstance(interval, IntervalInstance):
             interval = interval.interval
+        elif isinstance(interval, AllenReference):
+            interval = interval.target
+        result = []
         tact_list: List[TactRecord] = self.sorted_tact_list
-        tact_list.reverse()
         for tact_record in tact_list:
             instance = tact_record.get_interval_instance_by_interval(interval)
             if instance is not None:
-                return instance
-        return None
+                result.append(instance)
+        return result
     
     @property
     def __dict__(self):

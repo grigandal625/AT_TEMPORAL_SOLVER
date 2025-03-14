@@ -1,11 +1,11 @@
-from at_temporal_solver.core.wm import WorkingMemory
+from at_solver.core.wm import WorkingMemory
 from at_temporal_solver.core.timeline import Timeline, TactRecord
 from at_temporal_solver.evaluations.simple import SimpleEvaluator
 from at_temporal_solver.evaluations.allen import AllenEvaluator
 from at_krl.core.knowledge_base import KnowledgeBase
-from at_krl.core.kb_value import Evaluatable, KBValue
-from at_krl.core.kb_operation import KBOperation
-from at_krl.core.temporal.kb_allen_operation import KBAllenOperation
+from at_krl.core.simple.simple_evaluatable import SimpleEvaluatable
+from at_krl.core.simple.simple_operation import SimpleOperation
+from at_krl.core.temporal.allen_evaluatable import AllenEvaluatable
 from at_krl.core.kb_rule import KBRule
 
 
@@ -16,7 +16,7 @@ class TemporalSolver:
     signified_meta: dict = None
 
     def __init__(self, kb: KnowledgeBase) -> None:
-        self.wm = WorkingMemory(kb)
+        self.wm = WorkingMemory(kb=kb)
         self.kb = kb
         self.timeline = Timeline()
         self.current_tact = None
@@ -33,10 +33,10 @@ class TemporalSolver:
         self.signify_temporal_operations_in_rules()
 
     def build_timeline_tact(self) -> TactRecord:
-        evaluator = SimpleEvaluator(self)
+        evaluator = SimpleEvaluator(self.wm)
         for interval in self.kb.classes.intervals:
             open_value = evaluator.eval(interval.open)
-            instance = self.timeline.get_last_interval_instance(interval)
+            instance = self.timeline.get_interval_instance(interval)
             if open_value.content:
                 instance = self.timeline.open_interval_instance(self.current_tact, interval)
             if instance is not None and instance.open_tact != self.current_tact:
@@ -58,8 +58,8 @@ class TemporalSolver:
         for rule in self.kb.rules:
             self.search_and_signify(rule.condition, rule=rule)
     
-    def search_and_signify(self, v: Evaluatable, rule: KBRule):
-        if isinstance(v, KBAllenOperation):
+    def search_and_signify(self, v: SimpleEvaluatable, rule: KBRule):
+        if isinstance(v, AllenEvaluatable):
             allen_evaluator = AllenEvaluator(self)
             res = allen_evaluator.eval(v)
             self.wm.set_value('signifier.' + v.xml_owner_path, res)
@@ -68,7 +68,7 @@ class TemporalSolver:
                 'allen_operation': v.krl,
                 'value': res.content
             }
-        elif isinstance(v, KBOperation):
+        elif isinstance(v, SimpleOperation):
             self.search_and_signify(v.left, rule=rule)
             if v.is_binary:
                 self.search_and_signify(v.right, rule=rule)

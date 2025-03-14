@@ -1,33 +1,31 @@
-from at_krl.core.temporal.utils import SimpleEvaluatable
-from at_krl.core.temporal.utils import SimpleValue
-from at_krl.core.temporal.utils import SimpleReference
-from at_krl.core.temporal.utils import SimpleOperation
+from at_krl.core.simple.simple_evaluatable import SimpleEvaluatable
+from at_krl.core.simple.simple_value import SimpleValue
+from at_krl.core.simple.simple_reference import SimpleReference
+from at_krl.core.simple.simple_operation import SimpleOperation
 from at_krl.core.kb_value import KBValue
 from typing import TYPE_CHECKING, List, Union
 
 if TYPE_CHECKING:
-    from at_temporal_solver.core.at_temporal_solver import TemporalSolver
+    from at_solver.core.wm import WorkingMemory
 
 class SimpleEvaluator:
-    temporal_solver: 'TemporalSolver' = None
+    wm: 'WorkingMemory' = None
 
-    def __init__(self, temporal_solver: 'TemporalSolver'):
-        self.temporal_solver = temporal_solver
+    def __init__(self, wm: 'WorkingMemory'):
+        self.wm = wm
 
     def eval(self, v: SimpleEvaluatable, ref_stack: List[SimpleReference]=None) -> Union[KBValue, SimpleValue]:
         ref_stack = ref_stack or []
         if v is None:
-            return KBValue(None)
-        elif isinstance(v, KBValue):
-            return v
+            return SimpleValue(content=None)
         elif isinstance(v, SimpleValue):
-            return v
+            return v.to_simple()
         elif isinstance(v, SimpleReference):
-            if self.temporal_solver.wm.ref_is_accessible(v):
-                instance = self.temporal_solver.wm.get_instance_by_ref(v)
-                if [r.inner_krl for r in ref_stack].count(v.inner_krl) > 1:
+            if self.wm.ref_is_accessible(v):
+                instance = self.wm.get_instance_by_ref(v)
+                if [r.to_simple().krl for r in ref_stack].count(v.to_simple().krl) > 1:
                     raise ValueError(
-                        f'''Reference {v.inner_krl} has recursive link in wm to evaluate.
+                        f'''Reference {v.to_simple().krl} has recursive link in wm to evaluate.
                         
                         Reference value is getting form:
                         {instance.krl}
@@ -36,19 +34,19 @@ class SimpleEvaluator:
                 ref_stack.append(v)
                 return self.eval(instance.value, ref_stack=ref_stack)
             else:
-                local = self.temporal_solver.wm.locals.get(v.inner_krl)
+                local = self.wm.locals.get(v.to_simple().krl)
                 return self.eval(local)
             
         elif isinstance(v, SimpleOperation):
             left_v = self.eval(v.left)
             if left_v.content is None:
-                return KBValue(None)
+                return SimpleValue(None)
             if v.is_binary:
                 right_v = self.eval(v.right)
                 if right_v.content is None:
-                    return KBValue(None)
-                return EVALUATORS[v.op](left_v, right_v)
-            return EVALUATORS[v.op](left_v)
+                    return SimpleValue(None)
+                return EVALUATORS[v.operation_name](left_v, right_v)
+            return EVALUATORS[v.operation_name](left_v)
 
 
 def unify_number(n):
@@ -59,87 +57,87 @@ def unify_number(n):
 
 def eval_eq(left: SimpleValue, right: SimpleValue) -> SimpleValue:
     content = left.content == right.content
-    return SimpleValue(content)
+    return SimpleValue(content=content)
 
 
 def eval_gt(left: SimpleValue, right: SimpleValue) -> SimpleValue:
     content = left.content > right.content
-    return KBValue(content)
+    return SimpleValue(content=content)
 
 
 def eval_ge(left: SimpleValue, right: SimpleValue) -> SimpleValue:
     content = left.content >= right.content
-    return KBValue(content)
+    return SimpleValue(content=content)
 
 
 def eval_lt(left: SimpleValue, right: SimpleValue) -> SimpleValue:
     content = left.content < right.content
-    return KBValue(content)
+    return SimpleValue(content=content)
 
 
 def eval_le(left: SimpleValue, right: SimpleValue) -> SimpleValue:
     content = left.content <= right.content
-    return KBValue(content)
+    return SimpleValue(content=content)
 
 
 def eval_ne(left: SimpleValue, right: SimpleValue) -> SimpleValue:
     content = left.content != right.content
-    return KBValue(content)
+    return SimpleValue(content=content)
 
 
 def eval_and(left: SimpleValue, right: SimpleValue) -> SimpleValue:
     content = left.content and right.content
-    return KBValue(content)
+    return SimpleValue(content=content)
 
 
 def eval_or(left: SimpleValue, right: SimpleValue) -> SimpleValue:
     content = left.content or right.content
-    return KBValue(content)
+    return SimpleValue(content=content)
 
 
 def eval_not(v: SimpleValue, *args, **kwargs) -> SimpleValue:
     content = not v.content
-    return KBValue(content)
+    return SimpleValue(content=content)
 
 
 def eval_xor(left: SimpleValue, right: SimpleValue) -> SimpleValue:
     content = (left.content and not right.content) or (right and not left.content)
-    return KBValue(content)
+    return SimpleValue(content=content)
 
 
 def eval_neg(v: SimpleValue, *args, **kwargs) -> SimpleValue:
     content = -1 * unify_number(v.content)
-    return KBValue(content)
+    return SimpleValue(content=content)
 
 
 def eval_add(left: SimpleValue, right: SimpleValue) -> SimpleValue:
     content = left.content + right.content
-    return KBValue(content)
+    return SimpleValue(content=content)
 
 
 def eval_sub(left: SimpleValue, right: SimpleValue) -> SimpleValue:
     content = left.content - right.content
-    return KBValue(content)
+    return SimpleValue(content=content)
 
 
 def eval_mul(left: SimpleValue, right: SimpleValue) -> SimpleValue:
     content = unify_number(left.content) * unify_number(right.content)
-    return KBValue(content)
+    return SimpleValue(content=content)
 
 
 def eval_div(left: SimpleValue, right: SimpleValue) -> SimpleValue:
     content = unify_number(left.content) / unify_number(right.content)
-    return KBValue(content)
+    return SimpleValue(content=content)
 
 
 def eval_mod(left: SimpleValue, right: SimpleValue) -> SimpleValue:
     content = unify_number(left.content) % unify_number(right.content)
-    return KBValue(content)
+    return SimpleValue(content=content)
 
 
 def eval_pow(left: SimpleValue, right: SimpleValue) -> SimpleValue:
     content = unify_number(left.content) ** unify_number(right.content)
-    return KBValue(content)
+    return SimpleValue(content=content)
 
 
 EVALUATORS = {

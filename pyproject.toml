@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "at-temporal-solver"
-version = "0.1.dev7"
+version = "1.0.0"
 description = ""
 authors = ["grigadnal625 <grigandal625@gmail.com>"]
 readme = "README.md"
@@ -9,6 +9,7 @@ readme = "README.md"
 python = "^3.10"
 at-krl = {git = "https://github.com/grigandal625/AT_KRL.git", rev = "master"}
 at-queue = {git = "https://github.com/grigandal625/AT_QUEUE.git", rev = "master"}
+at-solver = {git = "https://github.com/grigandal625/AT_SOLVER.git"}
 
 
 [tool.poetry.group.dev.dependencies]
