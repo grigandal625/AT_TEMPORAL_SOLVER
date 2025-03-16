@@ -7,15 +7,6 @@ from at_temporal_solver.core.at_temporal_solver import TemporalSolver
 
 
 def test_temporal_solver():
-    def get_max_tact(e: Element):
-        tact = 0
-        for r in e:
-            if int(r.attrib["Номер_такта"]) > tact:
-                tact = int(r.attrib["Номер_такта"])
-        return tact
-
-    def get_all_resources_for_tact(e: Element, tact: int):
-        return [r for r in e if int(r.attrib["Номер_такта"]) == tact]
 
     kb_dict = {
         "tag": "knowledge-base",
