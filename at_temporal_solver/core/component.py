@@ -9,23 +9,17 @@ from uuid import UUID
 from xml.etree.ElementTree import Element
 
 from aio_pika import IncomingMessage
-from antlr4 import CommonTokenStream
-from antlr4 import InputStream
 from at_config.core.at_config_handler import ATComponentConfig
 from at_krl.core.kb_value import KBValue
 from at_krl.core.knowledge_base import KnowledgeBase
 from at_krl.core.non_factor import NonFactor
-from at_krl.grammar.at_krlLexer import at_krlLexer
-from at_krl.grammar.at_krlParser import at_krlParser
-from at_krl.utils.error_listener import ATKRLErrorListener
-from at_krl.utils.listener import ATKRLListener
 from at_queue.core.at_component import ATComponent
 from at_queue.core.session import ConnectionParameters
 from at_queue.utils.decorators import authorized_method
+from at_solver.core.wm import WorkingMemory
 
 from at_temporal_solver.core.at_temporal_solver import TemporalSolver
 from at_temporal_solver.core.timeline import Timeline
-from at_temporal_solver.core.wm import WorkingMemory
 
 
 class WMItemDict(TypedDict):
@@ -81,23 +75,9 @@ class ATTemporalSolver(ATComponent):
         if isinstance(kb_data, Element):
             return KnowledgeBase.from_xml(kb_data)
         elif isinstance(kb_data, dict):
-            return KnowledgeBase.from_dict(kb_data)
+            return KnowledgeBase.from_json(kb_data)
         elif isinstance(kb_data, str):
-            krl_text = kb_data
-
-            input_stream = InputStream(krl_text)
-            lexer = at_krlLexer(input_stream)
-            stream = CommonTokenStream(lexer)
-            parser = at_krlParser(stream)
-
-            listener = ATKRLListener()
-            parser.addParseListener(listener)
-            parser.removeErrorListeners()
-            parser.addErrorListener(ATKRLErrorListener())
-            tree = parser.knowledge_base()
-            if tree.exception:
-                raise tree.exception
-            return listener.KB
+            return KnowledgeBase.from_krl(kb_data)
         else:
             raise TypeError("Not valid type of knowledge base configuration")
 
@@ -159,7 +139,9 @@ class ATTemporalSolver(ATComponent):
             solver.wm = WorkingMemory(solver.kb)
         for item in items:
             nf = NonFactor(
-                belief=item.get("belief"), probability=item.get("probability"), accuracy=item.get("accuracy")
+                belief=item.get("belief", 50),
+                probability=item.get("probability", 100),
+                accuracy=item.get("accuracy", 0),
             )
             v = KBValue(content=item["value"], non_factor=nf)
             solver.wm.set_value(item["ref"], v)

@@ -46,11 +46,14 @@ async def main(**connection_kwargs):
     await solver.initialize()
     await solver.register()
 
-    if not os.path.exists("/var/run/at_temporal_solver/"):
-        os.makedirs("/var/run/at_temporal_solver/")
+    try:
+        if not os.path.exists("/var/run/at_temporal_solver/"):
+            os.makedirs("/var/run/at_temporal_solver/")
 
-    with open("/var/run/at_temporal_solver/pidfile.pid", "w") as f:
-        f.write(str(os.getpid()))
+        with open("/var/run/at_temporal_solver/pidfile.pid", "w") as f:
+            f.write(str(os.getpid()))
+    except PermissionError:
+        pass
 
     await solver.start()
 

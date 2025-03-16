@@ -1,5 +1,3 @@
-from xml.etree.ElementTree import Element
-
 from at_krl.core.knowledge_base import KnowledgeBase
 from at_solver.core.wm import WorkingMemory
 
@@ -7,7 +5,6 @@ from at_temporal_solver.core.at_temporal_solver import TemporalSolver
 
 
 def test_temporal_solver():
-
     kb_dict = {
         "tag": "knowledge-base",
         "problem_info": None,

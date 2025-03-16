@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "at-temporal-solver"
-version = "1.0.0"
+version = "1.0.1"
 description = ""
 authors = ["grigadnal625 <grigandal625@gmail.com>"]
 readme = "README.md"
@@ -14,6 +14,7 @@ at-solver = {git = "https://github.com/grigandal625/AT_SOLVER.git"}
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.2.0"
+pre-commit = "^4.1.0"
 
 
 [build-system]
