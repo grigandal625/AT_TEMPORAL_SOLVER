@@ -91,7 +91,7 @@ class ATTemporalSolver(ATComponent):
         auth_token = auth_token or "default"
 
         knowledge_base = kb
-        knowledge_base.validate()
+        # knowledge_base.validate()
 
         solver = TemporalSolver(knowledge_base)
         self.temporal_solvers[auth_token] = solver
