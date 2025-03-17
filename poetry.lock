@@ -108,7 +108,7 @@ resolved_reference = "0f62132f9bfa62083c53abfa9d0f6cccdf3cae33"
 
 [[package]]
 name = "at-krl"
-version = "1.0.16"
+version = "1.0.18"
 description = ""
 optional = false
 python-versions = "^3.10"
@@ -124,7 +124,7 @@ pydantic-xml = "^2.14.2"
 type = "git"
 url = "https://github.com/grigandal625/AT_KRL.git"
 reference = "master"
-resolved_reference = "7508a1c73ec5042f5caf09ba16b843654fce1075"
+resolved_reference = "e42ccf3aa2b6111bf44e812808063638ff13b499"
 
 [[package]]
 name = "at-queue"
@@ -149,7 +149,7 @@ resolved_reference = "14788dc22cc522164c404b352ef3711f78650a06"
 
 [[package]]
 name = "at-solver"
-version = "1.0.4"
+version = "1.0.5"
 description = ""
 optional = false
 python-versions = "^3.10"
@@ -164,7 +164,7 @@ at-queue = {git = "https://github.com/grigandal625/AT_QUEUE.git", rev = "master"
 type = "git"
 url = "https://github.com/grigandal625/AT_SOLVER.git"
 reference = "HEAD"
-resolved_reference = "9ee04315ed7c5b6f7759494e6eeba389e1b5c7b8"
+resolved_reference = "3a3ba68aff17744f4c6c305f6e188311c8bea0d8"
 
 [[package]]
 name = "attrs"

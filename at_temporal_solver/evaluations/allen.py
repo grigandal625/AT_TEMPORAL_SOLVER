@@ -115,7 +115,7 @@ class AllenEvaluator:
 
 
 def eval_b(left: TimeSection, right: TimeSection, *args, **kwargs) -> KBValue:
-    return KBValue(left.close < right.open)
+    return SimpleValue(content=left.close < right.open)
 
 
 def eval_bi(left: TimeSection, right: TimeSection, *args, **kwargs) -> KBValue:

@@ -44,11 +44,11 @@ class SimpleEvaluator:
         elif isinstance(v, SimpleOperation):
             left_v = self.eval(v.left)
             if left_v.content is None:
-                return SimpleValue(None)
+                return SimpleValue(content=None)
             if v.is_binary:
                 right_v = self.eval(v.right)
                 if right_v.content is None:
-                    return SimpleValue(None)
+                    return SimpleValue(content=None)
                 return EVALUATORS[v.operation_name](left_v, right_v)
             return EVALUATORS[v.operation_name](left_v)
 
