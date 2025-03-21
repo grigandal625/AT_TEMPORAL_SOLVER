@@ -85,16 +85,18 @@ class ATTemporalSolver(ATComponent):
         self, config: ATComponentConfig, auth_token: str = None, *args, **kwargs
     ) -> Coroutine[Any, Any, bool]:
         kb = self.get_kb_from_config(config)
-        return self.create_temporal_solver(kb, auth_token=auth_token)
+        return await self.create_temporal_solver(kb, auth_token=auth_token)
 
-    def create_temporal_solver(self, kb: KnowledgeBase, auth_token: str = None) -> bool:
+    async def create_temporal_solver(self, kb: KnowledgeBase, auth_token: str = None) -> bool:
         auth_token = auth_token or "default"
 
         knowledge_base = kb
         # knowledge_base.validate()
-
         solver = TemporalSolver(knowledge_base)
-        self.temporal_solvers[auth_token] = solver
+
+        auth_token_or_user_id = await self.get_user_id_or_token(auth_token, raize_on_failed=False)
+        self.temporal_solvers[auth_token_or_user_id] = solver
+
         return True
 
     async def check_configured(
@@ -108,33 +110,36 @@ class ATTemporalSolver(ATComponent):
         auth_token: str = None,
         **kwargs
     ) -> bool:
-        return self.has_temporal_solver(auth_token=auth_token)
+        auth_token_or_user_id = await self.get_user_id_or_token(auth_token, raize_on_failed=False)
+        return self.has_temporal_solver(auth_token_or_user_id=auth_token_or_user_id)
 
-    def has_temporal_solver(self, auth_token: str = None) -> bool:
+    def has_temporal_solver(self, auth_token_or_user_id: str | int) -> bool:
         try:
-            self.get_solver(auth_token)
+            self.get_solver(auth_token_or_user_id)
             return True
         except ValueError:
             return False
 
-    def get_solver(self, auth_token: str = None) -> TemporalSolver:
-        auth_token = auth_token or "default"
-        solver = self.temporal_solvers.get(auth_token)
+    def get_solver(self, auth_token_or_user_id: str | int) -> TemporalSolver:
+        auth_token_or_user_id = auth_token_or_user_id or "default"
+        solver = self.temporal_solvers.get(auth_token_or_user_id)
         if solver is None:
-            raise ValueError("Temporal solver for token '%s' is not created" % auth_token)
+            raise ValueError("Temporal solver for provided token or user id is not created")
         return solver
 
     @authorized_method
-    def reset(self, auth_token: str = None) -> bool:
-        solver = self.get_solver(auth_token=auth_token)
+    async def reset(self, auth_token: str = None) -> bool:
+        auth_token_or_user_id = await self.get_user_id_or_token(auth_token, raize_on_failed=False)
+        solver = self.get_solver(auth_token_or_user_id=auth_token_or_user_id)
         solver.wm = WorkingMemory(kb=solver.kb)
         solver.timeline = Timeline()
         solver.current_tact = None
         return True
 
     @authorized_method
-    def update_wm(self, items: List[WMItemDict], clear_before: bool = True, auth_token: str = None) -> bool:
-        solver = self.get_solver(auth_token=auth_token)
+    async def update_wm(self, items: List[WMItemDict], clear_before: bool = True, auth_token: str = None) -> bool:
+        auth_token_or_user_id = await self.get_user_id_or_token(auth_token, raize_on_failed=False)
+        solver = self.get_solver(auth_token_or_user_id=auth_token_or_user_id)
         if clear_before:
             solver.wm = WorkingMemory(solver.kb)
         for item in items:
@@ -154,8 +159,9 @@ class ATTemporalSolver(ATComponent):
         return self.update_wm(items=items, clear_before=clear_before, auth_token=auth_token)
 
     @authorized_method
-    def process_tact(self, auth_token: str) -> ProcessTactResultDict:
-        solver = self.get_solver(auth_token)
+    async def process_tact(self, auth_token: str) -> ProcessTactResultDict:
+        auth_token_or_user_id = await self.get_user_id_or_token(auth_token, raize_on_failed=False)
+        solver = self.get_solver(auth_token_or_user_id=auth_token_or_user_id)
         solver.process_tact()
         return {
             "wm": solver.wm.all_values_dict,
