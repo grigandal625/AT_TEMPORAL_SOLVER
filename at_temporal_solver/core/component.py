@@ -7,6 +7,7 @@ from typing import TypedDict
 from typing import Union
 from uuid import UUID
 from xml.etree.ElementTree import Element
+import inspect
 
 from aio_pika import IncomingMessage
 from at_config.core.at_config_handler import ATComponentConfig
@@ -63,7 +64,7 @@ class ATTemporalSolver(ATComponent):
         super().__init__(connection_parameters, *args, **kwargs)
         self.temporal_solvers = {}
 
-    def get_kb_from_config(self, config: ATComponentConfig) -> KnowledgeBase:
+    async def get_kb_from_config(self, config: ATComponentConfig) -> KnowledgeBase:
         kb_item = config.items.get("kb")
         if kb_item is None:
             kb_item = config.items.get("knowledge_base")
@@ -72,6 +73,8 @@ class ATTemporalSolver(ATComponent):
         if kb_item is None:
             raise ValueError("Knowledge base is required")
         kb_data = kb_item.data
+        if inspect.iscoroutine(kb_data):
+            kb_data = await kb_data
         if isinstance(kb_data, Element):
             return KnowledgeBase.from_xml(kb_data)
         elif isinstance(kb_data, dict):
@@ -84,7 +87,7 @@ class ATTemporalSolver(ATComponent):
     async def perform_configurate(
         self, config: ATComponentConfig, auth_token: str = None, *args, **kwargs
     ) -> Coroutine[Any, Any, bool]:
-        kb = self.get_kb_from_config(config)
+        kb = await self.get_kb_from_config(config)
         return await self.create_temporal_solver(kb, auth_token=auth_token)
 
     async def create_temporal_solver(self, kb: KnowledgeBase, auth_token: str = None) -> bool:
